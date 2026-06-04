@@ -1,0 +1,16 @@
+Ebola real dataset 2013-2026
+Columns: Country, Region, Report_Date, Age_Group, New_Cases, New_Deaths
+
+Important: Age_Group is "All ages" because public outbreak summaries do not provide consistent age-stratified data across all Ebola outbreaks from 2013 to 2026.
+The 2013 row is the retrospective WHO-identified first West Africa case in Meliandou, Guinea, who fell ill on 26 Dec 2013 and died two days later.
+West Africa rows through 2015-01-05 are computed as differences between cumulative WHO situation-report values from cmrivers/ebola country_timeseries.csv. Negative deltas are retained and represent reporting corrections/revisions in cumulative bulletins, not negative infections.
+Rows from 2016 onward are outbreak-level totals using CDC/WHO public outbreak summaries; Report_Date is the end/declaration/current report date.
+
+Sources:
+- https://github.com/cmrivers/ebola/blob/master/country_timeseries.csv
+- https://www.who.int/news/item/04-09-2015-ground-zero-in-guinea-the-ebola-outbreak-smoulders-undetected-for-more-than-3-months
+- https://www.who.int/emergencies/situations/ebola-outbreak-2014-2016-West-Africa
+- https://www.cdc.gov/ebola/outbreaks/index.html
+- https://www.cdc.gov/ebola/situation-summary/index.html
+- https://www.who.int/emergencies/disease-outbreak-news/item/2025-DON566
+- https://www.who.int/emergencies/disease-outbreak-news/item/2026-DON602

@@ -3,110 +3,192 @@
 
 <head>
     <meta charset="UTF-8">
-    <title>Painel de Topologia Urbana</title>
+    <title>Ebola Track: Vigilância Epidemiológica</title>
+
     <script src="https://d3js.org/d3.v7.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/@duckdb/duckdb-wasm@1.28.0/dist/duckdb-mvp.js"></script>
+
     <link rel="stylesheet" href="style.css">
 </head>
 
 <body>
 
-    <h1>UrbEx TimePanel:Ferramenta interativa de análise de exclusão social temporal</h1>
+    <h1>Ebola Track: Vigilância Epidemiológica Espaço-Temporal</h1>
 
-    <div class="painel-comparativo"
-        style="display: flex; flex-direction: row; justify-content: center; align-items: flex-start; gap: 40px; margin: 20px auto; width: fit-content;">
+    <main class="page-layout">
 
-        <div class="coluna-graficos" style="display: flex; flex-direction: column; gap: 30px; align-items: center;">
+        <section class="main-content">
 
-            <div class="card">
-                <h2>Bairros Periféricos</h2>
-                <svg id="heatmap-periferia" width="900" height="350"></svg>
+            <section class="kpi-grid">
+                <div class="kpi-card">
+                    <span>Casos globais no ano</span>
+                    <strong id="kpi-casos">-</strong>
+                </div>
+
+                <div class="kpi-card">
+                    <span>Óbitos globais no ano</span>
+                    <strong id="kpi-obitos">-</strong>
+                </div>
+
+                <div class="kpi-card">
+                    <span>Letalidade global</span>
+                    <strong id="kpi-letalidade">-</strong>
+                </div>
+
+                <div class="kpi-card">
+                    <span>Países da África</span>
+                    <strong id="kpi-paises">-</strong>
+                </div>
+
+                <div class="kpi-card">
+                    <span>Casos importados</span>
+                    <strong id="kpi-importados">-</strong>
+                </div>
+            </section>
+
+            <div class="dashboard-grid">
+
+                <div class="card">
+                    <h2>1. Navegador Espacial — África</h2>
+                    <svg id="mapa-africa"></svg>
+                </div>
+
+                <div class="card">
+                    <h2 id="titulo-ranking-principal">2. Ranking de Casos por País</h2>
+                    <svg id="ranking-casos"></svg>
+                </div>
+
+                <div class="card">
+                    <h2 id="titulo-painel-letalidade">3. Letalidade Anual do País Selecionado</h2>
+                    <svg id="ranking-letalidade"></svg>
+                </div>
+
+                <div class="card">
+                    <h2 id="titulo-painel-participacao">4. Participação do País no Total Global (%)</h2>
+                    <svg id="participacao-casos"></svg>
+                </div>
+
+                <div class="card card-wide">
+                    <h2>5. Heatmap Ano × País</h2>
+                    <svg id="heatmap-ano-pais"></svg>
+                </div>
+
+                <div class="card card-wide">
+                    <h2>6. Linha do Tempo Global</h2>
+                    <svg id="linha-tempo-global"></svg>
+                </div>
+
             </div>
 
-            <div class="card">
-                <h2>Bairros Nobres</h2>
-                <svg id="heatmap-nobre" width="900" height="350"></svg>
-            </div>
-        </div>
+        </section>
 
-        <div class="coluna-controles"
-            style="display: flex; flex-direction: column; gap: 20px; margin-top: 0px; position: sticky; top: 20px; background: #ffffff; padding: 20px; border-radius: 8px; box-shadow: 0 4px 12px rgba(0,0,0,0.05); border: 1px solid #eaeaea; width: 260px;">
+        <aside class="side-panel">
 
-            <div style="font-family: sans-serif;">
-                <label for="seletor-regiao"
-                    style="font-weight: bold; display: block; margin-bottom: 8px; color: #333; font-size: 14px;">
-                    Filtrar Região
-                </label>
-                <select id="seletor-regiao"
-                    style="padding: 8px 16px; border-radius: 6px; border: 1px solid #ccc; font-size: 14px; cursor: pointer; width: 100%; background-color: #fff; box-shadow: inset 0 1px 3px rgba(0,0,0,0.1);">
-                    <option value="Brooklyn">Brooklyn</option>
-                    <option value="Queens">Queens</option>
-                    <option value="North Manhattan">North Manhattan</option>
-                    <option value="Bronx">Bronx</option>
-                    <option value="Staten Island">Staten Island</option>
-                    <option value="New Jersey Coast">New Jersey Coast</option>
-                    <option value="Long Island Border">Long Island Border</option>
-                </select>
+            <h2>Painel de Controle</h2>
+
+            <div class="side-section">
+                <label>📅 Ano de análise</label>
+                <div id="container-legenda-html"></div>
             </div>
 
-            <hr style="border: 0; border-top: 1px solid #eaeaea; margin: 5px 0;">
+            <hr>
 
-            <div style="font-family: sans-serif;">
-                <span style="font-weight: bold; display: block; margin-bottom: 12px; color: #333; font-size: 14px;">
-                    Tipo de Dia
-                </span>
+            <div class="side-section">
+                <label>📌 País ativo</label>
+                <div id="pais-ativo-card">-</div>
+            </div>
 
-                <div style="display: flex; flex-direction: column; gap: 10px; font-size: 14px; color: #555;">
-                    <label style="display: flex; align-items: center; gap: 8px; cursor: pointer;">
-                        <input type="radio" name="filtro-dia" value="todos" checked style="cursor: pointer;">
-                        Todos os Dias
+            <div class="side-section resumo-pais">
+                <label>Resumo do país ativo</label>
+
+                <div class="resumo-grid">
+                    <div>
+                        <span>Ano</span>
+                        <strong id="resumo-ano">-</strong>
+                    </div>
+
+                    <div>
+                        <span>Casos</span>
+                        <strong id="resumo-casos">-</strong>
+                    </div>
+
+                    <div>
+                        <span>Óbitos</span>
+                        <strong id="resumo-obitos">-</strong>
+                    </div>
+
+                    <div>
+                        <span>Letalidade</span>
+                        <strong id="resumo-letalidade">-</strong>
+                    </div>
+                </div>
+            </div>
+
+            <hr>
+
+            <div class="side-section">
+                <label>📊 Dimensão do Ranking</label>
+
+                <div id="ranking-mode-selector">
+                    <label class="radio-option">
+                        <input type="radio" name="rankingMode" value="pais" checked>
+                        <span>Países no ano</span>
                     </label>
-                    <label style="display: flex; align-items: center; gap: 8px; cursor: pointer;">
-                        <input type="radio" name="filtro-dia" value="uteis" style="cursor: pointer;">
-                        Dias Úteis (Seg a Sex)
+
+                    <label class="radio-option">
+                        <input type="radio" name="rankingMode" value="ano">
+                        <span>Anos globais</span>
                     </label>
-                    <label style="display: flex; align-items: center; gap: 8px; cursor: pointer;">
-                        <input type="radio" name="filtro-dia" value="fds" style="cursor: pointer;">
-                        Finais de Semana (Sáb e Dom)
+
+                    <label class="radio-option">
+                        <input type="radio" name="rankingMode" value="casosPorObito">
+                        <span>Casos / Óbito</span>
+                    </label>
+
+                    <label class="radio-option">
+                        <input type="radio" name="rankingMode" value="historicoPais">
+                        <span>Histórico do país</span>
+                    </label>
+
+                    <label class="radio-option">
+                        <input type="radio" name="rankingMode" value="importados">
+                        <span>Casos importados</span>
                     </label>
                 </div>
             </div>
 
-            <hr style="border: 0; border-top: 1px solid #eaeaea; margin: 5px 0;">
+            <hr>
 
-            <div style="font-family: sans-serif;">
-                <span style="font-weight: bold; display: block; margin-bottom: 12px; color: #333; font-size: 14px;">
-                    Granularidade Temporal
-                </span>
+            <div class="side-section">
+                <label>▶ Animação temporal</label>
+                <button id="btn-play-anos" class="btn-controle">Play anos</button>
+            </div>
 
-                <div style="display: flex; flex-direction: column; gap: 10px; font-size: 14px; color: #555;">
+            <hr>
 
-                    <label style="display: flex; align-items: center; gap: 8px; cursor: pointer;">
-                        <input type="radio" name="filtro-granularidade" value="periodos" checked
-                            style="cursor: pointer;">
-                        Períodos (Agregado)
-                    </label>
-                    <label style="display: flex; align-items: center; gap: 8px; cursor: pointer;">
-                        <input type="radio" name="filtro-granularidade" value="horas" style="cursor: pointer;">
-                        Horas (Detalhado)
-                    </label>
-                    <label style="display: flex; align-items: center; gap: 8px; cursor: pointer;">
-                        <input type="radio" name="filtro-granularidade" value="consolidado" style="cursor: pointer;">
-                        Consolidado (Média dos Perfis)
-                    </label>
+            <div class="side-section legenda">
+                <label>Legenda</label>
+
+                <div class="legend-row">
+                    <span class="legend-color sem-casos"></span>
+                    <span>Sem casos</span>
+                </div>
+
+                <div class="legend-row">
+                    <span class="legend-color poucos-casos"></span>
+                    <span>Menor casos</span>
+                </div>
+
+                <div class="legend-row">
+                    <span class="legend-color muitos-casos"></span>
+                    <span>Maior casos</span>
                 </div>
             </div>
 
-            <hr style="border: 0; border-top: 1px solid #eaeaea; margin: 5px 0;">
+        </aside>
 
-            <div id="container-legenda-html" style="width: 100%;"></div>
+    </main>
 
-        </div>
-
-    </div>
-
-    <script src="dao.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/d3@7"></script>
     <script type="module" src="app.js"></script>
 
 </body>

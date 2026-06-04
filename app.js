@@ -1,470 +1,871 @@
-import { DAO } from './dao.js'; 
+import { DAO } from './dao.js';
 
-// =========================================================================
-// MATRIZ DE ZONEAMENTO METROPOLITANO (80 ZONAS)
-// Estrutura de Dicionário (Hash Map) O(1) para traduzir 
-// IDs numéricos brutos do TLC em metadados semânticos e socioeconômicos.
-// =========================================================================
-const mapeamentoZonas = {
-    // === 1. BROOKLYN ===
-    66:  { nome: "DUMBO / Vineyard", distrito: "Brooklyn", perfil: "Nobre" },
-    25:  { nome: "Brooklyn Heights", distrito: "Brooklyn", perfil: "Nobre" },
-    181: { nome: "Park Slope", distrito: "Brooklyn", perfil: "Nobre" },
-    97:  { nome: "Fort Greene", distrito: "Brooklyn", perfil: "Nobre" },
-    61:  { nome: "Crown Heights North", distrito: "Brooklyn", perfil: "Nobre" },
-    34:  { nome: "Canarsie", distrito: "Brooklyn", perfil: "Periferia" },
-    26:  { nome: "Brownsville", distrito: "Brooklyn", perfil: "Periferia" },
-    76:  { nome: "East New York", distrito: "Brooklyn", perfil: "Periferia" },
-    108: { nome: "Gravesend", distrito: "Brooklyn", perfil: "Periferia" },
-    14:  { nome: "Bay Ridge", distrito: "Brooklyn", perfil: "Periferia" },
-
-    // === 2. QUEENS ===
-    193: { nome: "Long Island City", distrito: "Queens", perfil: "Nobre" },
-    7:   { nome: "Astoria", distrito: "Queens", perfil: "Nobre" },
-    134: { nome: "Sunny Side", distrito: "Queens", perfil: "Nobre" },
-    95:  { nome: "Forest Hills", distrito: "Queens", perfil: "Nobre" },
-    223: { nome: "Steinway", distrito: "Queens", perfil: "Nobre" },
-    130: { nome: "Jamaica", distrito: "Queens", perfil: "Periferia" },
-    93:  { nome: "Far Rockaway", distrito: "Queens", perfil: "Periferia" },
-    216: { nome: "South Ozone Park", distrito: "Queens", perfil: "Periferia" },
-    56:  { nome: "Corona", distrito: "Queens", perfil: "Periferia" },
-    131: { nome: "Jamaica Estates", distrito: "Queens", perfil: "Periferia" },
-
-    // === 3. MANHATTAN (Centro / Sul) ===
-    236: { nome: "Upper East Side North", distrito: "Manhattan", perfil: "Nobre" },
-    263: { nome: "Yorkville West", distrito: "Manhattan", perfil: "Nobre" },
-    141: { nome: "Lenox Hill West", distrito: "Manhattan", perfil: "Nobre" },
-    237: { nome: "Upper East Side South", distrito: "Manhattan", perfil: "Nobre" },
-    142: { nome: "Lincoln Square Top", distrito: "Manhattan", perfil: "Nobre" },
-    140: { nome: "Lenox Hill East", distrito: "Manhattan", perfil: "Periferia" },
-    262: { nome: "Yorkville East", distrito: "Manhattan", perfil: "Periferia" },
-    50:  { nome: "Clinton West", distrito: "Manhattan", perfil: "Periferia" },
-    48:  { nome: "Clinton East", distrito: "Manhattan", perfil: "Periferia" },
-    100: { nome: "Garment District", distrito: "Manhattan", perfil: "Periferia" },
-
-    // === 4. NORTH MANHATTAN ===
-    127: { nome: "Inwood", distrito: "North Manhattan", perfil: "Nobre" },
-    244: { nome: "Washington Hts South", distrito: "North Manhattan", perfil: "Nobre" },
-    243: { nome: "Washington Hts North", distrito: "North Manhattan", perfil: "Nobre" },
-    116: { nome: "Hamilton Heights", distrito: "North Manhattan", perfil: "Nobre" },
-    152: { nome: "Manhattanville", distrito: "North Manhattan", perfil: "Nobre" },
-    41:  { nome: "Central Harlem", distrito: "North Manhattan", perfil: "Periferia" },
-    74:  { nome: "East Harlem North", distrito: "North Manhattan", perfil: "Periferia" },
-    75:  { nome: "East Harlem South", distrito: "North Manhattan", perfil: "Periferia" },
-    43:  { nome: "Central Harlem North", distrito: "North Manhattan", perfil: "Periferia" },
-    166: { nome: "Morningside Heights", distrito: "North Manhattan", perfil: "Periferia" },
-
-    // === 5. BRONX ===
-    259: { nome: "Woodlawn / Wake", distrito: "Bronx", perfil: "Nobre" },
-    183: { nome: "Pelham Parkway", distrito: "Bronx", perfil: "Nobre" },
-    242: { nome: "Van Nest / Morris", distrito: "Bronx", perfil: "Nobre" },
-    126: { nome: "Hunts Point", distrito: "Bronx", perfil: "Nobre" },
-    213: { nome: "Riverdale", distrito: "Bronx", perfil: "Nobre" },
-    167: { nome: "Morrisania / Melrose", distrito: "Bronx", perfil: "Periferia" },
-    119: { location: "Highbridge", distrito: "Bronx", perfil: "Periferia" },
-    174: { nome: "Norwood", distrito: "Bronx", perfil: "Periferia" },
-    182: { nome: "Pelham Bay", distrito: "Bronx", perfil: "Periferia" },
-    200: { nome: "Rocklawn / Van Cort", distrito: "Bronx", perfil: "Periferia" },
-
-    // === 6. STATEN ISLAND ===
-    214: { nome: "South Beach / Dongan", distrito: "Staten Island", perfil: "Nobre" },
-    221: { nome: "Stapleton", distrito: "Staten Island", perfil: "Nobre" },
-    132: { nome: "Eltingville / Annadale", distrito: "Staten Island", perfil: "Nobre" },
-    226: { nome: "Sunnyside (SI)", distrito: "Staten Island", perfil: "Nobre" },
-    6:   { nome: "Arrochar / Fort Wadsworth", distrito: "Staten Island", perfil: "Nobre" },
-    187: { nome: "Port Richmond", distrito: "Staten Island", perfil: "Periferia" },
-    23:  { nome: "Bloomfield / Chelsea", distrito: "Staten Island", perfil: "Periferia" },
-    156: { nome: "Mariners Harbor", distrito: "Staten Island", perfil: "Periferia" },
-    110: { nome: "Great Kills", distrito: "Staten Island", perfil: "Periferia" },
-    84:  { nome: "Eltingville South", distrito: "Staten Island", perfil: "Periferia" },
-
-    // === 7. NEW JERSEY COAST ===
-    31:  { nome: "Jersey City Medical", distrito: "New Jersey Coast", perfil: "Nobre" },
-    32:  { nome: "Jersey City Riverfront", distrito: "New Jersey Coast", perfil: "Nobre" },
-    124: { nome: "Hoboken Naval Base", distrito: "New Jersey Coast", perfil: "Nobre" },
-    125: { nome: "Hoboken West Point", distrito: "New Jersey Coast", perfil: "Nobre" },
-    133: { nome: "Jersey City Heights", distrito: "New Jersey Coast", perfil: "Nobre" },
-    13:  { nome: "Bayonne North", distrito: "New Jersey Coast", perfil: "Periferia" },
-    15:  { nome: "Bay Ridge Fringe", distrito: "New Jersey Coast", perfil: "Periferia" },
-    247: { nome: "West New York Border", distrito: "New Jersey Coast", perfil: "Periferia" },
-    248: { nome: "Secaucus / Bergen", distrito: "New Jersey Coast", perfil: "Periferia" },
-    179: { nome: "North Bergen / Guttenberg", distrito: "New Jersey Coast", perfil: "Periferia" },
-
-    // === 8. LONG ISLAND BORDER ===
-    121: { nome: "Hillcrest / Fresh Meadows", distrito: "Long Island Border", perfil: "Nobre" },
-    122: { nome: "Holliswood / Jamaica", distrito: "Long Island Border", perfil: "Nobre" },
-    203: { nome: "Rosedale South", distrito: "Long Island Border", perfil: "Nobre" },
-    204: { nome: "Rosedale North / Valley", distrito: "Long Island Border", perfil: "Nobre" },
-    205: { nome: "Saint Albans East", distrito: "Long Island Border", perfil: "Nobre" },
-    1:   { nome: "Newark Airport Extension", distrito: "Long Island Border", perfil: "Periferia" },
-    2:   { nome: "Jamaica Bay Wildlife", distrito: "Long Island Border", perfil: "Periferia" },
-    155: { nome: "Madison Fringe", distrito: "Long Island Border", perfil: "Periferia" },
-    154: { nome: "Marine Park Border", distrito: "Long Island Border", perfil: "Periferia" },
-    153: { nome: "Marble Hill Border", distrito: "Long Island Border", perfil: "Periferia" }
-};
-
-// Instanciação da camada de persistência/acesso a dados (Data Access Object)
 const meuDao = new DAO();
 
-// Manipulação do DOM: Injeção da div flutuante que atuará como Tooltip de auditoria
+let dadosGlobaisEbola = [];
+let dadosGeoGlobais = null;
+
+let paisSelecionadoAtual = "";
+let anoSelecionadoAtual = "";
+let modoRankingPrincipal = "pais";
+let playAtivo = false;
+let intervaloPlay = null;
+
 const tooltip = d3.select('body')
     .append('div')
     .attr('class', 'tooltip');
 
-// Armazenamento estático em memória para evitar requisições redundantes de rede I/O
-let dadosGlobaisDoFluxo = [];
+function normalizarPais(nome) {
+    if (!nome) return "";
 
-// INITIALIZATION: Inicialização assíncrona do ecossistema do Dashboard
-meuDao.carregarDadosDeFluxo()
-    .then(dadosDoBanco => {
-        dadosGlobaisDoFluxo = dadosDoBanco;
-        console.log("Exemplo de dado do banco:", dadosDoBanco[0]);
+    const pais = String(nome).trim();
 
-        // Manipulação do DOM: Vinculação de Listeners de Eventos para os inputs de controle
-        d3.select("#seletor-regiao").on("change", pipelineDeAtualizacao);
-        d3.selectAll("input[name='filtro-dia']").on("change", pipelineDeAtualizacao);
-        d3.selectAll("input[name='filtro-granularidade']").on("change", pipelineDeAtualizacao); 
+    if (
+        pais === "DR Congo" ||
+        pais === "Democratic Republic of the Congo" ||
+        pais === "COD" ||
+        pais === "Congo, Dem. Rep." ||
+        pais === "Dem. Rep. Congo" ||
+        pais === "Congo (Kinshasa)"
+    ) return "Democratic Republic of the Congo";
 
-        // Escuta reativa às mudanças do usuário e dispara o recálculo do pipeline
-        function pipelineDeAtualizacao() {
-            const regiaoSelecionada = d3.select("#seletor-regiao").property("value");
-            const tipoDiaSelecionado = d3.select("input[name='filtro-dia']:checked").property("value");
-            const granularidadeSelecionada = d3.select("input[name='filtro-granularidade']:checked").property("value");
+    if (pais === "Guinea") return "Guinea";
+    if (pais === "Guinea-Bissau") return "Guinea-Bissau";
+    if (pais === "Equatorial Guinea") return "Equatorial Guinea";
 
-            atualizarPainelPorFiltros(regiaoSelecionada, tipoDiaSelecionado, granularidadeSelecionada);
-        }
+    if (pais === "Sierra Leone") return "Sierra Leone";
+    if (pais === "Liberia") return "Liberia";
+    if (pais === "Uganda") return "Uganda";
+    if (pais === "Nigeria") return "Nigeria";
+    if (pais === "Mali") return "Mali";
+    if (pais === "Senegal") return "Senegal";
 
-        // Estado inicial da renderização (Default: Brooklyn, Todos os dias, por Turnos Semânticos)
-        atualizarPainelPorFiltros("Brooklyn", "todos", "periodos");
-        criarLegendaHtml();
-    })
-    .catch(error => console.error("Erro ao inicializar fluxo:", error));
+    if (pais === "Spain") return "Spain";
+    if (pais === "Italy") return "Italy";
+    if (pais === "United Kingdom") return "United Kingdom";
+    if (pais === "United States") return "United States";
+    if (pais === "United States of America") return "United States";
 
-// Abstração Temporal (When): Conversão de horas contínuas [0-23] em categorias discretas urbanas
-// Justificativa Infovis: Mitigação da sobrecarga visual e redução da carga cognitiva no Eixo X
-function mapearTurnoUrbano(hora) {
-    if (hora >= 6 && hora <= 11) return "Manhã";
-    if (hora >= 12 && hora <= 17) return "Tarde";
-    if (hora >= 18 && hora <= 23) return "Noite";
-    return "Madrugada";
+    return pais;
 }
 
-// =========================================================================
-// PIPELINE DE FILTRAGEM MULTI-NÍVEL E DERIVAÇÃO DE ATRIBUTOS (NÍVEL WHAT)
-// =========================================================================
-function atualizarPainelPorFiltros(distritoAlvo, tipoDiaAlvo, granularidadeAlva) {
-    
-    // Transformação What: Mapeamento de IDs para nomes e injeção do atributo 'perfil' (Derivação)
-    let dadosFiltrados = dadosGlobaisDoFluxo
-        .map(d => {
-            const infoZona = mapeamentoZonas[d.bairro];
-            if (infoZona && infoZona.distrito === distritoAlvo) {
-                return { ...d, bairro: infoZona.nome, perfil: infoZona.perfil };
-            }
-            return null;
-        })
-        .filter(d => d !== null); // Limpeza de registros desalinhados com o distrito sob análise
+function nomeCurtoPais(nome) {
+    if (nome === "Democratic Republic of the Congo") return "DR Congo";
+    if (nome === "United States") return "EUA";
+    if (nome === "United Kingdom") return "Reino Unido";
+    return nome;
+}
 
-    // Filtragem de série temporal com base no tipo de dia da semana (U.S. Time Convention)
-    if (tipoDiaAlvo === "uteis") {
-        dadosFiltrados = dadosFiltrados.filter(d => d.day_of_week >= 1 && d.day_of_week <= 5);
-    } else if (tipoDiaAlvo === "fds") {
-        dadosFiltrados = dadosFiltrados.filter(d => d.day_of_week === 0 || d.day_of_week === 6);
+function obterPaisesNoMapaAfrica() {
+    if (!dadosGeoGlobais) return new Set();
+
+    return new Set(
+        dadosGeoGlobais.features.map(feature =>
+            normalizarPais(feature.properties.name || feature.properties.ADMIN)
+        )
+    );
+}
+
+function obterDadosDoAno() {
+    return dadosGlobaisEbola
+        .filter(d => d.ano === Number(anoSelecionadoAtual) && d.casos > 0)
+        .sort((a, b) => b.casos - a.casos);
+}
+
+function obterDadosAfricanosDoAno() {
+    const paisesAfrica = obterPaisesNoMapaAfrica();
+
+    return obterDadosDoAno()
+        .filter(d => paisesAfrica.has(d.pais));
+}
+
+function obterDadosImportadosDoAno() {
+    const paisesAfrica = obterPaisesNoMapaAfrica();
+
+    return obterDadosDoAno()
+        .filter(d => !paisesAfrica.has(d.pais));
+}
+
+function obterTotaisPorAno() {
+    return d3.rollups(
+        dadosGlobaisEbola,
+        v => ({
+            casos: d3.sum(v, d => d.casos),
+            obitos: d3.sum(v, d => d.obitos)
+        }),
+        d => d.ano
+    )
+        .map(([ano, stats]) => ({
+            ano,
+            label: String(ano),
+            casos: stats.casos,
+            obitos: stats.obitos,
+            casosPorObito: stats.obitos > 0 ? stats.casos / stats.obitos : 0,
+            letalidade: stats.casos > 0 ? (stats.obitos / stats.casos) * 100 : 0
+        }))
+        .filter(d => d.casos > 0)
+        .sort((a, b) => b.casos - a.casos);
+}
+
+function obterHistoricoPais(pais) {
+    const totaisGlobaisPorAno = new Map(
+        obterTotaisPorAno().map(d => [d.ano, d])
+    );
+
+    return d3.rollups(
+        dadosGlobaisEbola.filter(d => d.pais === pais),
+        v => ({
+            casos: d3.sum(v, d => d.casos),
+            obitos: d3.sum(v, d => d.obitos)
+        }),
+        d => d.ano
+    )
+        .map(([ano, stats]) => {
+            const totalGlobalAno = totaisGlobaisPorAno.get(ano);
+            const participacao = totalGlobalAno && totalGlobalAno.casos > 0
+                ? (stats.casos / totalGlobalAno.casos) * 100
+                : 0;
+
+            return {
+                ano,
+                label: String(ano),
+                casos: stats.casos,
+                obitos: stats.obitos,
+                letalidade: stats.casos > 0 ? (stats.obitos / stats.casos) * 100 : 0,
+                casosPorObito: stats.obitos > 0 ? stats.casos / stats.obitos : 0,
+                participacao
+            };
+        })
+        .filter(d => d.casos > 0)
+        .sort((a, b) => b.ano - a.ano);
+}
+
+function obterPaisAtivo(dadosAno) {
+    if (!dadosAno.length) return null;
+
+    if (!paisSelecionadoAtual || !dadosAno.some(d => d.pais === paisSelecionadoAtual)) {
+        paisSelecionadoAtual = dadosAno[0].pais;
     }
 
-    // Identificação de controle do domínio geográfico fixo do distrito atual
-    const todosBairrosDoDistrito = Object.values(mapeamentoZonas)
-        .filter(zona => zona.distrito === distritoAlvo);
+    return dadosAno.find(d => d.pais === paisSelecionadoAtual);
+}
 
-    let dadosCompletos = [];
-    let ordemNobres = [];
-    let ordemPeriferia = [];
+function atualizarKPIs(dadosAno) {
+    const totalCasos = d3.sum(dadosAno, d => d.casos);
+    const totalObitos = d3.sum(dadosAno, d => d.obitos);
+    const letalidade = totalCasos > 0 ? (totalObitos / totalCasos) * 100 : 0;
 
-    // =========================================================================
-    // MODALIDADE 1: VISÃO CONSOLIDADA (MÉDIA DAS REALIDADES LOCAIS ABSTRATAS)
-    // Abstração de Alto Nível: Redução de dimensionalidade espacial eliminando as linhas
-    // individuais para expor curvas puras de tendência socioeconômica agregada.
-    // =========================================================================
-    if (granularidadeAlva === "consolidado") {
-        ordemNobres = ["Todos os Bairros Nobres"];
-        ordemPeriferia = ["Todos os Bairros Periféricos"];
-        
-        const perfis = ["Periferia", "Nobre"];
-        const turnos = ["Madrugada", "Manhã", "Tarde", "Noite"];
+    const dadosAfrica = obterDadosAfricanosDoAno();
+    const dadosImportados = obterDadosImportadosDoAno();
 
-        perfis.forEach(perfilAlvo => {
-            const rotuloEixoY = perfilAlvo === "Periferia" ? "Todos os Bairros Periféricos" : "Todos os Bairros Nobres";
-            const bairrosDoPerfil = todosBairrosDoDistrito.filter(z => z.perfil === perfilAlvo).map(z => z.nome);
+    const paisesAfricanosAfetados = new Set(dadosAfrica.map(d => d.pais)).size;
+    const casosImportados = d3.sum(dadosImportados, d => d.casos);
 
-            turnos.forEach(turno => {
-                let somaEficienciasLocais = 0;
-                let bairrosComDados = 0;
-                let somaTotalPickups = 0;
-                let somaTotalDropoffs = 0;
+    d3.select("#kpi-casos").text(totalCasos.toLocaleString());
+    d3.select("#kpi-obitos").text(totalObitos.toLocaleString());
+    d3.select("#kpi-letalidade").text(`${letalidade.toFixed(1)}%`);
+    d3.select("#kpi-paises").text(paisesAfricanosAfetados.toLocaleString());
+    d3.select("#kpi-importados").text(casosImportados.toLocaleString());
+}
 
-                bairrosDoPerfil.forEach(bairroNome => {
-                    const dadosDoBairroTurno = dadosFiltrados.filter(d => d.bairro === bairroNome && mapearTurnoUrbano(d.hour) === turno);
-                    
-                    if (dadosDoBairroTurno.length > 0) {
-                        const p = d3.sum(dadosDoBairroTurno, d => d.pickups);
-                        const d = d3.sum(dadosDoBairroTurno, d => d.dropoffs);
-                        somaTotalPickups += p;
-                        somaTotalDropoffs += d;
-                        
-                        // Cálculo da Métrica Derivada Interna (Razão Pickups/Dropoffs)
-                        somaEficienciasLocais += (d > 0 ? (p / d) : 1.0);
-                        bairrosComDados++;
-                    } else {
-                        // Regularização estatística: se o bairro não tem atividade, assume-se neutralidade (1.0)
-                        somaEficienciasLocais += 1.0;
-                        bairrosComDados++;
-                    }
-                });
+function atualizarResumoPaisAtivo(paisAtivo) {
+    if (!paisAtivo) return;
 
-                // Consolidação por média simples das eficiências locais (Garante peso igual a cada comunidade)
-                const eficienciaConsolidada = bairrosComDados > 0 ? (somaEficienciasLocais / bairrosComDados) : 1.0;
+    const letalidade = paisAtivo.casos > 0
+        ? (paisAtivo.obitos / paisAtivo.casos) * 100
+        : 0;
 
-                dadosCompletos.push({
-                    bairro: rotuloEixoY, tempoLabel: turno, perfil: perfilAlvo,
-                    pickups: somaTotalPickups, dropoffs: somaTotalDropoffs, eficiencia: eficienciaConsolidada
-                });
+    d3.select("#pais-ativo-card").text(nomeCurtoPais(paisSelecionadoAtual));
+    d3.select("#resumo-ano").text(anoSelecionadoAtual);
+    d3.select("#resumo-casos").text(paisAtivo.casos.toLocaleString());
+    d3.select("#resumo-obitos").text(paisAtivo.obitos.toLocaleString());
+    d3.select("#resumo-letalidade").text(`${letalidade.toFixed(1)}%`);
+}
+
+function atualizarDashboard() {
+    const dadosAno = obterDadosDoAno();
+
+    if (dadosAno.length === 0) {
+        limparGraficos();
+        return;
+    }
+
+    const dadosAfrica = obterDadosAfricanosDoAno();
+    const baseParaPaisAtivo = dadosAfrica.length > 0 ? dadosAfrica : dadosAno;
+    const paisAtivo = obterPaisAtivo(baseParaPaisAtivo);
+
+    atualizarKPIs(dadosAno);
+    atualizarResumoPaisAtivo(paisAtivo);
+
+    renderizarMapaAfrica(dadosGeoGlobais);
+    renderizarRankingPrincipal();
+    renderizarLetalidadeHistoricaDoPais();
+    renderizarParticipacaoHistoricaDoPais();
+    renderizarHeatmapAnoPais();
+    renderizarLinhaTempoGlobal();
+}
+
+function limparGraficos() {
+    d3.select("#mapa-africa").selectAll("*").remove();
+    d3.select("#ranking-casos").selectAll("*").remove();
+    d3.select("#ranking-letalidade").selectAll("*").remove();
+    d3.select("#participacao-casos").selectAll("*").remove();
+    d3.select("#heatmap-ano-pais").selectAll("*").remove();
+    d3.select("#linha-tempo-global").selectAll("*").remove();
+}
+
+Promise.all([
+    meuDao.carregarDadosEpidemiologicos(),
+    d3.json('data/africa.geojson')
+]).then(([dadosEbola, dadosGeo]) => {
+    dadosGlobaisEbola = dadosEbola;
+    dadosGeoGlobais = dadosGeo;
+
+    const anos = d3.rollups(
+        dadosGlobaisEbola,
+        v => d3.sum(v, d => d.casos),
+        d => d.ano
+    )
+        .filter(d => d[1] > 0)
+        .sort((a, b) => b[0] - a[0]);
+
+    if (anos.length === 0) {
+        console.error("Nenhum ano com casos encontrado no dataset.");
+        return;
+    }
+
+    anoSelecionadoAtual = String(anos[0][0]);
+
+    const seletor = d3.select("#container-legenda-html")
+        .html("")
+        .append("select")
+        .attr("id", "seletor-ano-painel");
+
+    seletor.selectAll("option")
+        .data(anos)
+        .enter()
+        .append("option")
+        .attr("value", d => d[0])
+        .text(d => `Ano ${d[0]} (${d[1].toLocaleString()} casos)`);
+
+    seletor.property("value", anoSelecionadoAtual);
+
+    seletor.on("change", function(event) {
+        anoSelecionadoAtual = event.target.value;
+        paisSelecionadoAtual = "";
+        atualizarDashboard();
+    });
+
+    d3.selectAll('input[name="rankingMode"]').on("change", function() {
+        modoRankingPrincipal = this.value;
+        renderizarRankingPrincipal();
+    });
+
+    d3.select("#btn-play-anos").on("click", alternarPlayAnos);
+
+    atualizarDashboard();
+
+}).catch(error => console.error("Erro fatal na inicialização:", error));
+
+function alternarPlayAnos() {
+    const anosOrdenados = obterTotaisPorAno()
+        .map(d => String(d.ano))
+        .sort((a, b) => Number(a) - Number(b));
+
+    if (!playAtivo) {
+        playAtivo = true;
+        d3.select("#btn-play-anos").text("Pause");
+
+        intervaloPlay = setInterval(() => {
+            const indiceAtual = anosOrdenados.indexOf(String(anoSelecionadoAtual));
+            const proximoIndice = indiceAtual >= 0
+                ? (indiceAtual + 1) % anosOrdenados.length
+                : 0;
+
+            anoSelecionadoAtual = anosOrdenados[proximoIndice];
+            paisSelecionadoAtual = "";
+
+            d3.select("#seletor-ano-painel").property("value", anoSelecionadoAtual);
+
+            atualizarDashboard();
+        }, 2200);
+
+        return;
+    }
+
+    playAtivo = false;
+    d3.select("#btn-play-anos").text("Play anos");
+    clearInterval(intervaloPlay);
+}
+
+function renderizarMapaAfrica(geoData) {
+    const svg = d3.select("#mapa-africa");
+    svg.selectAll("*").remove();
+
+    const dadosAno = obterDadosAfricanosDoAno();
+    const casosPorPais = new Map(dadosAno.map(d => [d.pais, d.casos]));
+    const maxCasos = d3.max(dadosAno, d => d.casos) || 1;
+
+    const container = document.getElementById("mapa-africa");
+    const width = container.clientWidth || 600;
+    const height = container.clientHeight || 400;
+
+    const projection = d3.geoMercator().fitSize([width, height], geoData);
+    const path = d3.geoPath().projection(projection);
+
+    const corMagnitude = d3.scaleSequentialLog()
+        .domain([1, maxCasos])
+        .interpolator(d3.interpolateReds);
+
+    const features = geoData.features.map(feature => {
+        const pais = normalizarPais(feature.properties.name || feature.properties.ADMIN);
+
+        return {
+            ...feature,
+            paisNormalizado: pais,
+            casos: casosPorPais.get(pais) || 0
+        };
+    });
+
+    svg.append("g")
+        .selectAll("path")
+        .data(features)
+        .enter()
+        .append("path")
+        .attr("d", path)
+        .attr("fill", d => {
+            if (d.casos <= 0) return "#334155";
+            if (d.paisNormalizado === paisSelecionadoAtual) return "#ef4444";
+            return corMagnitude(d.casos);
+        })
+        .attr("stroke", d => d.paisNormalizado === paisSelecionadoAtual ? "#f8fafc" : "#0f172a")
+        .attr("stroke-width", d => d.paisNormalizado === paisSelecionadoAtual ? 2.2 : 1)
+        .style("cursor", d => d.casos > 0 ? "pointer" : "default")
+        .on("mouseover", function(event, d) {
+            if (d.casos <= 0) return;
+
+            d3.select(this)
+                .attr("fill", "#f87171")
+                .attr("stroke", "#f8fafc")
+                .attr("stroke-width", 2.2);
+
+            tooltip
+                .style("opacity", 1)
+                .html(
+                    `<strong>${d.paisNormalizado}</strong><br>` +
+                    `Casos: ${d.casos.toLocaleString()}`
+                );
+        })
+        .on("mousemove", function(event) {
+            tooltip
+                .style("left", `${event.pageX + 10}px`)
+                .style("top", `${event.pageY - 20}px`);
+        })
+        .on("mouseleave", function(event, d) {
+            d3.select(this)
+                .attr("fill", () => {
+                    if (d.casos <= 0) return "#334155";
+                    if (d.paisNormalizado === paisSelecionadoAtual) return "#ef4444";
+                    return corMagnitude(d.casos);
+                })
+                .attr("stroke", d.paisNormalizado === paisSelecionadoAtual ? "#f8fafc" : "#0f172a")
+                .attr("stroke-width", d.paisNormalizado === paisSelecionadoAtual ? 2.2 : 1);
+
+            tooltip.style("opacity", 0);
+        })
+        .on("click", function(event, d) {
+            if (d.casos > 0) {
+                paisSelecionadoAtual = d.paisNormalizado;
+                modoRankingPrincipal = "historicoPais";
+
+                d3.select('input[name="rankingMode"][value="historicoPais"]')
+                    .property("checked", true);
+
+                atualizarDashboard();
+            }
+        });
+}
+
+function renderizarRankingPrincipal() {
+    if (modoRankingPrincipal === "pais") {
+        d3.select("#titulo-ranking-principal").text("2. Ranking de Casos por País no Ano");
+
+        const dadosAno = obterDadosDoAno();
+
+        renderizarBarrasHorizontais({
+            seletor: "#ranking-casos",
+            dados: dadosAno.map(d => ({
+                label: d.pais,
+                valor: d.casos,
+                casos: d.casos,
+                obitos: d.obitos
+            })),
+            tituloTooltip: "Casos",
+            formato: d => d.toLocaleString(),
+            destacarLabel: paisSelecionadoAtual,
+            aoClicar: d => {
+                paisSelecionadoAtual = d.label;
+                modoRankingPrincipal = "historicoPais";
+
+                d3.select('input[name="rankingMode"][value="historicoPais"]')
+                    .property("checked", true);
+
+                atualizarDashboard();
+            }
+        });
+
+        return;
+    }
+
+    if (modoRankingPrincipal === "ano") {
+        d3.select("#titulo-ranking-principal").text("2. Ranking Global de Casos por Ano");
+
+        const dadosAnos = obterTotaisPorAno()
+            .sort((a, b) => b.casos - a.casos);
+
+        renderizarBarrasHorizontais({
+            seletor: "#ranking-casos",
+            dados: dadosAnos.map(d => ({
+                label: String(d.ano),
+                valor: d.casos,
+                casos: d.casos,
+                obitos: d.obitos
+            })),
+            tituloTooltip: "Casos no ano",
+            formato: d => d.toLocaleString(),
+            destacarLabel: String(anoSelecionadoAtual),
+            aoClicar: d => {
+                anoSelecionadoAtual = String(d.label);
+                paisSelecionadoAtual = "";
+                d3.select("#seletor-ano-painel").property("value", anoSelecionadoAtual);
+                atualizarDashboard();
+            }
+        });
+
+        return;
+    }
+
+    if (modoRankingPrincipal === "casosPorObito") {
+        d3.select("#titulo-ranking-principal").text("2. Casos por Óbito por Ano");
+
+        const dadosCasosPorObito = obterTotaisPorAno()
+            .filter(d => d.obitos > 0)
+            .sort((a, b) => b.casosPorObito - a.casosPorObito);
+
+        renderizarBarrasHorizontais({
+            seletor: "#ranking-casos",
+            dados: dadosCasosPorObito.map(d => ({
+                label: String(d.ano),
+                valor: d.casosPorObito,
+                casos: d.casos,
+                obitos: d.obitos
+            })),
+            tituloTooltip: "Casos por óbito",
+            formato: d => `${d.toFixed(2)} casos/óbito`,
+            destacarLabel: String(anoSelecionadoAtual),
+            aoClicar: d => {
+                anoSelecionadoAtual = String(d.label);
+                paisSelecionadoAtual = "";
+                d3.select("#seletor-ano-painel").property("value", anoSelecionadoAtual);
+                atualizarDashboard();
+            }
+        });
+
+        return;
+    }
+
+    if (modoRankingPrincipal === "importados") {
+        d3.select("#titulo-ranking-principal").text(`2. Casos Importados — ${anoSelecionadoAtual}`);
+
+        const dadosImportados = obterDadosImportadosDoAno();
+
+        renderizarBarrasHorizontais({
+            seletor: "#ranking-casos",
+            dados: dadosImportados.map(d => ({
+                label: d.pais,
+                valor: d.casos,
+                casos: d.casos,
+                obitos: d.obitos
+            })),
+            tituloTooltip: "Casos importados",
+            formato: d => d.toLocaleString(),
+            destacarLabel: paisSelecionadoAtual,
+            aoClicar: d => {
+                paisSelecionadoAtual = d.label;
+                atualizarDashboard();
+            },
+            mensagemVazia: "Sem casos importados neste ano."
+        });
+
+        return;
+    }
+
+    d3.select("#titulo-ranking-principal").text(`2. Histórico de Casos — ${nomeCurtoPais(paisSelecionadoAtual)}`);
+
+    const historico = obterHistoricoPais(paisSelecionadoAtual)
+        .sort((a, b) => b.casos - a.casos);
+
+    renderizarBarrasHorizontais({
+        seletor: "#ranking-casos",
+        dados: historico.map(d => ({
+            label: String(d.ano),
+            valor: d.casos,
+            casos: d.casos,
+            obitos: d.obitos
+        })),
+        tituloTooltip: "Casos do país no ano",
+        formato: d => d.toLocaleString(),
+        destacarLabel: String(anoSelecionadoAtual),
+        aoClicar: d => {
+            anoSelecionadoAtual = String(d.label);
+            d3.select("#seletor-ano-painel").property("value", anoSelecionadoAtual);
+            atualizarDashboard();
+        }
+    });
+}
+
+function renderizarLetalidadeHistoricaDoPais() {
+    d3.select("#titulo-painel-letalidade").text(`3. Letalidade Anual — ${nomeCurtoPais(paisSelecionadoAtual)}`);
+
+    const historico = obterHistoricoPais(paisSelecionadoAtual)
+        .sort((a, b) => b.letalidade - a.letalidade);
+
+    renderizarBarrasHorizontais({
+        seletor: "#ranking-letalidade",
+        dados: historico.map(d => ({
+            label: String(d.ano),
+            valor: d.letalidade,
+            casos: d.casos,
+            obitos: d.obitos
+        })),
+        tituloTooltip: "Letalidade",
+        formato: d => `${d.toFixed(1)}%`,
+        destacarLabel: String(anoSelecionadoAtual),
+        dominioMaximo: 100,
+        aoClicar: d => {
+            anoSelecionadoAtual = String(d.label);
+            d3.select("#seletor-ano-painel").property("value", anoSelecionadoAtual);
+            atualizarDashboard();
+        }
+    });
+}
+
+function renderizarParticipacaoHistoricaDoPais() {
+    d3.select("#titulo-painel-participacao").text(`4. Participação Global — ${nomeCurtoPais(paisSelecionadoAtual)}`);
+
+    const historico = obterHistoricoPais(paisSelecionadoAtual)
+        .sort((a, b) => b.participacao - a.participacao);
+
+    renderizarBarrasHorizontais({
+        seletor: "#participacao-casos",
+        dados: historico.map(d => ({
+            label: String(d.ano),
+            valor: d.participacao,
+            casos: d.casos,
+            obitos: d.obitos
+        })),
+        tituloTooltip: "Participação no total global",
+        formato: d => `${d.toFixed(1)}%`,
+        destacarLabel: String(anoSelecionadoAtual),
+        dominioMaximo: 100,
+        aoClicar: d => {
+            anoSelecionadoAtual = String(d.label);
+            d3.select("#seletor-ano-painel").property("value", anoSelecionadoAtual);
+            atualizarDashboard();
+        }
+    });
+}
+
+function renderizarHeatmapAnoPais() {
+    const svg = d3.select("#heatmap-ano-pais");
+    svg.selectAll("*").remove();
+
+    const width = svg.node().getBoundingClientRect().width;
+    const height = svg.node().getBoundingClientRect().height;
+    const margin = { top: 30, right: 30, bottom: 50, left: 180 };
+
+    const innerWidth = width - margin.left - margin.right;
+    const innerHeight = height - margin.top - margin.bottom;
+
+    const anos = [...new Set(dadosGlobaisEbola.map(d => d.ano))]
+        .sort((a, b) => a - b);
+
+    const paises = [...new Set(dadosGlobaisEbola.filter(d => d.casos > 0).map(d => d.pais))]
+        .sort();
+
+    const matriz = [];
+
+    paises.forEach(pais => {
+        anos.forEach(ano => {
+            const registros = dadosGlobaisEbola.filter(d => d.pais === pais && d.ano === ano);
+            matriz.push({
+                pais,
+                ano,
+                casos: d3.sum(registros, d => d.casos),
+                obitos: d3.sum(registros, d => d.obitos)
             });
         });
+    });
 
-    } else {
-        // =========================================================================
-        // MODALIDADES DISCRETAS: ANÁLISE POR BAIRROS INDIVIDUAIS
-        // =========================================================================
-        ordemNobres = [...new Set(todosBairrosDoDistrito.filter(zona => zona.perfil === "Nobre").map(zona => zona.nome))];
-        ordemPeriferia = [...new Set(todosBairrosDoDistrito.filter(zona => zona.perfil === "Periferia").map(zona => zona.nome))];
-        const bairrosDesseDistrito = [...new Set(todosBairrosDoDistrito.map(zona => zona.nome))];
+    const maxCasos = d3.max(matriz, d => d.casos) || 1;
 
-        bairrosDesseDistrito.forEach(bairroNome => {
-            const modeloBairro = todosBairrosDoDistrito.find(zona => zona.nome === bairroNome);
-            const perfilDefinido = modeloBairro ? modeloBairro.perfil : "Periferia";
+    const x = d3.scaleBand()
+        .domain(anos.map(String))
+        .range([0, innerWidth])
+        .padding(0.05);
 
-            // Sub-Modo A: Granularidade por Horas Literais [0h - 23h]
-            if (granularidadeAlva === "horas") {
-                for (let hora = 0; hora < 24; hora++) {
-                    const dadosDaHora = dadosFiltrados.filter(d => d.bairro === bairroNome && d.hour === hora);
-                    if (dadosDaHora.length > 0) {
-                        const totalPickups = d3.sum(dadosDaHora, d => d.pickups);
-                        const totalDropoffs = d3.sum(dadosDaHora, d => d.dropoffs);
-                        const eficienciaMedia = totalDropoffs > 0 ? (totalPickups / totalDropoffs) : 1.0;
+    const y = d3.scaleBand()
+        .domain(paises)
+        .range([0, innerHeight])
+        .padding(0.05);
 
-                        dadosCompletos.push({
-                            bairro: bairroNome, tempoLabel: `${hora}h`, perfil: perfilDefinido,
-                            pickups: totalPickups, dropoffs: totalDropoffs, eficiencia: eficienciaMedia
-                        });
-                    } else {
-                        // Preservação da matriz estrutural preenchendo vazios amostrais com zeros neutros
-                        dadosCompletos.push({
-                            bairro: bairroNome, tempoLabel: `${hora}h`, perfil: perfilDefinido,
-                            pickups: 0, dropoffs: 0, eficiencia: 1.0
-                        });
-                    }
-                }
-            // Sub-Modo B: Granularidade Agrupada por Períodos Semânticos (Madrugada, Manhã, Tarde, Noite)
-            } else if (granularidadeAlva === "periodos") {
-                const turnos = ["Madrugada", "Manhã", "Tarde", "Noite"];
-                turnos.forEach(turno => {
-                    const dadosDoTurno = dadosFiltrados.filter(d => d.bairro === bairroNome && mapearTurnoUrbano(d.hour) === turno);
+    const cor = d3.scaleSequentialLog()
+        .domain([1, maxCasos])
+        .interpolator(d3.interpolateReds);
 
-                    if (dadosDoTurno.length > 0) {
-                        const totalPickups = d3.sum(dadosDoTurno, d => d.pickups);
-                        const totalDropoffs = d3.sum(dadosDoTurno, d => d.dropoffs);
-                        const eficienciaMedia = totalDropoffs > 0 ? (totalPickups / totalDropoffs) : 1.0;
+    const g = svg.append("g")
+        .attr("transform", `translate(${margin.left},${margin.top})`);
 
-                        dadosCompletos.push({
-                            bairro: bairroNome, tempoLabel: turno, perfil: perfilDefinido,
-                            pickups: totalPickups, dropoffs: totalDropoffs, eficiencia: eficienciaMedia
-                        });
-                    } else {
-                        dadosCompletos.push({
-                            bairro: bairroNome, tempoLabel: turno, perfil: perfilDefinido,
-                            pickups: 0, dropoffs: 0, eficiencia: 1.0
-                        });
-                    }
-                });
-            }
-        });
-    }
-
-    // Segregação final dos subsets para alimentação isolada dos dois componentes independentes de SVG
-    const dadosPeriferiaGrafico = dadosCompletos.filter(d => d.perfil === "Periferia");
-    const dadosNobresGrafico = dadosCompletos.filter(d => d.perfil === "Nobre");
-
-    // Acoplamento e chamada do motor de renderização gráfica
-    desenharGraficos(dadosPeriferiaGrafico, '#heatmap-periferia', ordemPeriferia);
-    desenharGraficos(dadosNobresGrafico, '#heatmap-nobre', ordemNobres);
-}
-
-// =========================================================================
-// 📊 MOTOR RENDERIZADOR D3 (NÍVEL HOW - CODIFICAÇÃO VISUAL E CANAIS)
-// Justificativa do Design: Utilização estrita do Ranking de Eficácia de Canais de Munzner.
-// 1. Canal de Posição Espacial Comum (Eixos X/Y) para os atributos ordenados/categóricos.
-// 2. Canal de Magnitude por Luminância e Saturação Divergente para o atributo quantitativo.
-// =========================================================================
-function desenharGraficos(data, idsvg, ordemBairros) {
-    const svg = d3.select(idsvg);
-    svg.selectAll("*").remove(); // Limpeza completa do DOM do SVG antes do Redraw (Evita vazamento de memória)
-
-    // Configuração estrutural do layout e margens para acomodar rótulos textuais longos (Left: 160px)
-    const margin = { top: 25, right: 30, left: 160, bottom: 40 };
-    const width = 960 - margin.left - margin.right;
-    const height = 160;
-
-    // Ajuste dinâmico de atributos no contêiner SVG e injeção do nó principal 'g' agrupador
-    const g = svg.attr('width', width + margin.left + margin.right)
-        .attr('height', height + margin.top + margin.bottom)
-        .append('g')
-        .attr('transform', `translate(${margin.left},${margin.top})`);
-
-    // Extração e ordenação determinística das colunas temporais do Eixo X
-    const distinctTimes = [...new Set(data.map(d => d.tempoLabel))];
-    if (distinctTimes.includes("Madrugada")) {
-        distinctTimes.sort((a, b) => {
-            const ordemTurnos = { "Madrugada": 1, "Manhã": 2, "Tarde": 3, "Noite": 4 };
-            return ordemTurnos[a] - ordemTurnos[b];
-        });
-    } else {
-        distinctTimes.sort((a, b) => parseInt(a) - parseInt(b)); // Ordenação numérica cronológica para o modo horas
-    }
-
-    // CÁLCULO DE ESCALAS (D3.JS)
-    // Escala Band (Ordinal discreta) para mapear os rótulos de tempo no comprimento horizontal em pixels
-    const xScale = d3.scaleBand()
-        .domain(distinctTimes)
-        .range([0, width])
-        .padding(0.08); // Padding interno cria o espaçamento visual clássico de matrizes/heatmaps
-
-    // Escala Band para mapear a listagem discreta de bairros na altura vertical útil em pixels
-    const yScale = d3.scaleBand()
-        .domain(ordemBairros)
-        .range([0, height])
-        .padding(0.12);
-
-    // Escala de Cores Linear e Divergente (Canal de Magnitude para Expressar a Variável Derivada)
-    // Escala Colorimétrica ColorBrewing (Red-Yellow-Green Divergent):
-    // 0.00 (Vermelho Profundo) -> Deficit Logístico Absoluto (Chegadas dominam / Morador Isolado)
-    // 1.00 (Amarelo Pastel/Bege) -> Equilíbrio de Fluxo / Invisibilidade Amostral Sistêmica
-    // 2.00 (Verde Escuro) -> Superávit Operacional (Atratividade e retenção ativa da frota)
-    const colorScale = d3.scaleLinear()
-        .domain([0.0, 1.0, 2.0])
-        .range(["#a50026", "#ffffbf", "#006837"])
-        .clamp(true); // Clamp impede estouro de cores caso a razão de saídas dispare (ex: 5.0)
-
-    // INTERAÇÃO E MANIPULAÇÃO DO DOM: Injeção das células geométricas (rect) do Heatmap
-    const celulas = g.selectAll(".quadradinho")
-        .data(data)
+    g.selectAll("rect")
+        .data(matriz)
         .enter()
         .append("rect")
-        .attr("class", "quadradinho")
-        .attr("x", d => xScale(d.tempoLabel)) // Vinculação do X à escala temporal calculada
-        .attr("y", d => yScale(d.bairro))     // Vinculação do Y à escala categórica do bairro
-        .attr("width", xScale.bandwidth())   // Largura adaptativa calculada pelo D3 com base no número de colunas
-        .attr("height", yScale.bandwidth())  // Altura adaptativa baseada na densidade de linhas
-        .attr("rx", 3.5)                     // Arredondamento estético dos cantos dos seletores visuais
-        .attr("ry", 3.5)
-        .style("stroke", "none")
-        .style("fill", "#fafafa")            // Cor de base neutra para a interpolação de transição animada
-        .on("mouseover", function (event, d) {
-            // Lógica de Isolamento Visual (Foco Analítico): Reduz opacidade dos adjacentes e destaca a célula sob o mouse
-            celulas.style("opacity", 0.25);
-            d3.select(this).style("opacity", 1);
-
-            // Alimentação de dados dinâmicos e injeção de HTML estrutural dentro do nó Tooltip do DOM
-            tooltip.style("opacity", 1)
-                .html(`
-                    <strong>${d.bairro}</strong><br/>
-                    Período: <strong>${d.tempoLabel}</strong><br/>
-                    <hr style='margin: 4px 0; border:0; border-top:1px solid #e1e8ed;'>
-                    Pickups (Saídas): ${d.pickups}<br/>
-                    Dropoffs (Chegadas): ${d.dropoffs}<br/>
-                    Razão Saídas e Chegadas: <strong>${d.eficiencia.toFixed(2)}</strong>
-                `)
-                .style("font-family", "'Inter', sans-serif");
+        .attr("x", d => x(String(d.ano)))
+        .attr("y", d => y(d.pais))
+        .attr("width", x.bandwidth())
+        .attr("height", y.bandwidth())
+        .attr("fill", d => d.casos > 0 ? cor(d.casos) : "#334155")
+        .attr("stroke", d => {
+            if (String(d.ano) === String(anoSelecionadoAtual) && d.pais === paisSelecionadoAtual) return "#f8fafc";
+            return "#1e293b";
         })
-        .on("mousemove", function (event) {
-            // Rastreamento Euclidiano: Reposiciona a caixa flutuante seguindo as coordenadas do ponteiro do mouse
-            tooltip.style("left", (event.pageX + 15) + "px")
-                .style("top", (event.pageY - 20) + "px");
+        .attr("stroke-width", d => {
+            if (String(d.ano) === String(anoSelecionadoAtual) && d.pais === paisSelecionadoAtual) return 2;
+            return 0.5;
         })
-        .on("mouseleave", function () {
-            // Restaura as propriedades originais do DOM ao retirar o ponteiro do elemento
-            celulas.style("opacity", 1);
+        .style("cursor", d => d.casos > 0 ? "pointer" : "default")
+        .on("mouseover", function(event, d) {
+            tooltip
+                .style("opacity", 1)
+                .html(
+                    `<strong>${d.pais}</strong><br>` +
+                    `Ano: ${d.ano}<br>` +
+                    `Casos: ${d.casos.toLocaleString()}<br>` +
+                    `Óbitos: ${d.obitos.toLocaleString()}`
+                );
+        })
+        .on("mousemove", function(event) {
+            tooltip
+                .style("left", `${event.pageX + 10}px`)
+                .style("top", `${event.pageY - 20}px`);
+        })
+        .on("mouseleave", function() {
             tooltip.style("opacity", 0);
+        })
+        .on("click", function(event, d) {
+            if (d.casos > 0) {
+                anoSelecionadoAtual = String(d.ano);
+                paisSelecionadoAtual = d.pais;
+
+                d3.select("#seletor-ano-painel").property("value", anoSelecionadoAtual);
+                modoRankingPrincipal = "historicoPais";
+                d3.select('input[name="rankingMode"][value="historicoPais"]').property("checked", true);
+
+                atualizarDashboard();
+            }
         });
 
-    // Animação de Entrada/Atualização: Suaviza a transição de cores durantes as trocas de filtros
-    celulas.transition()
-        .duration(450)
-        .style("fill", d => colorScale(d.eficiencia));
-
-    // MANIPULAÇÃO DO DOM: Construção e desenho dos componentes de eixos (Ticks textuais)
-    // Injeção do Eixo Horizontal (Tempo Urbano)
     g.append("g")
-        .attr("transform", `translate(0, ${height})`)
-        .call(d3.axisBottom(xScale).tickSize(0)) // Ocultação física dos risquinhos (ticks) para preservar o minimalismo
-        .call(g => g.select(".domain").remove()) // Remoção da linha sólida estrutural do eixo
-        .style("font-family", "'Inter', sans-serif")
-        .style("font-size", "10px")
-        .style("color", "#8898aa")
-        .selectAll("text")
-        .style("margin-top", "6px");
+        .attr("transform", `translate(0,${innerHeight})`)
+        .call(d3.axisBottom(x))
+        .attr("color", "#94a3b8");
 
-    // Injeção do Eixo Vertical (Vizinhanças/Classes Socioespaciais)
     g.append("g")
-        .call(d3.axisLeft(yScale).tickSize(0))
-        .call(g => g.select(".domain").remove())
-        .style("font-family", "'Inter', sans-serif")
-        .style("font-size", "11px")
-        .style("color", "#1e293b")
+        .call(d3.axisLeft(y))
+        .attr("color", "#94a3b8")
         .selectAll("text")
-        .style("font-weight", "500")
-        .attr("dx", "-6px");
+        .style("font-size", "10px");
 }
 
-// =========================================================================
-// 🎨 GERADOR DE LEGENDA HTML SIDEBAR (MANIPULAÇÃO PURA DO DOM VIA D3)
-// Justificativa: Fornecer o mapeamento explícito de leitura do canal de cores 
-// sem sobrecarregar a área dos componentes SVGs principais.
-// =========================================================================
-function criarLegendaHtml() {
-    const container = d3.select("#container-legenda-html");
-    container.selectAll("*").remove(); // Esvazia o container para evitar duplicações no re-render
+function renderizarLinhaTempoGlobal() {
+    const svg = d3.select("#linha-tempo-global");
+    svg.selectAll("*").remove();
 
-    const box = container.append("div")
-        .style("display", "flex")
-        .style("flex-direction", "column")
-        .style("align-items", "stretch")
-        .style("font-family", "'Inter', 'Segoe UI', sans-serif")
-        .style("color", "#2f3542");
+    const dados = obterTotaisPorAno()
+        .sort((a, b) => a.ano - b.ano);
 
-    box.append("div")
-        .text("Eficiência de Fluxo (Razão Saídas/Chegadas)")
-        .style("font-size", "13px")
-        .style("font-weight", "600")
-        .style("margin-bottom", "10px");
+    const width = svg.node().getBoundingClientRect().width;
+    const height = svg.node().getBoundingClientRect().height;
+    const margin = { top: 25, right: 40, bottom: 45, left: 80 };
 
-    // Injeção de uma barra com gradiente CSS nativo perfeitamente espelhado com a escala colorimétrica do D3
-    box.append("div")
-        .style("width", "100%")
-        .style("height", "14px")
-        .style("border-radius", "4px")
-        .style("background", "linear-gradient(to right, #a50026 0%, #ffffbf 50%, #006837 100%)")
-        .style("border", "1px solid #e1e8ed")
-        .style("margin-bottom", "12px");
+    const innerWidth = width - margin.left - margin.right;
+    const innerHeight = height - margin.top - margin.bottom;
 
-    const labels = box.append("div")
-        .style("display", "flex")
-        .style("flex-direction", "column")
-        .style("gap", "6px")
+    const x = d3.scaleBand()
+        .domain(dados.map(d => String(d.ano)))
+        .range([0, innerWidth])
+        .padding(0.25);
+
+    const y = d3.scaleLinear()
+        .domain([0, d3.max(dados, d => d.casos) || 1])
+        .nice()
+        .range([innerHeight, 0]);
+
+    const g = svg.append("g")
+        .attr("transform", `translate(${margin.left},${margin.top})`);
+
+    g.selectAll("rect")
+        .data(dados)
+        .enter()
+        .append("rect")
+        .attr("x", d => x(String(d.ano)))
+        .attr("y", d => y(d.casos))
+        .attr("width", x.bandwidth())
+        .attr("height", d => innerHeight - y(d.casos))
+        .attr("rx", 4)
+        .attr("fill", d => String(d.ano) === String(anoSelecionadoAtual) ? "#ef4444" : "#38bdf8")
+        .style("cursor", "pointer")
+        .on("mouseover", function(event, d) {
+            tooltip
+                .style("opacity", 1)
+                .html(
+                    `<strong>${d.ano}</strong><br>` +
+                    `Casos: ${d.casos.toLocaleString()}<br>` +
+                    `Óbitos: ${d.obitos.toLocaleString()}`
+                );
+        })
+        .on("mousemove", function(event) {
+            tooltip
+                .style("left", `${event.pageX + 10}px`)
+                .style("top", `${event.pageY - 20}px`);
+        })
+        .on("mouseleave", function() {
+            tooltip.style("opacity", 0);
+        })
+        .on("click", function(event, d) {
+            anoSelecionadoAtual = String(d.ano);
+            paisSelecionadoAtual = "";
+
+            d3.select("#seletor-ano-painel").property("value", anoSelecionadoAtual);
+
+            atualizarDashboard();
+        });
+
+    g.append("g")
+        .attr("transform", `translate(0,${innerHeight})`)
+        .call(d3.axisBottom(x))
+        .attr("color", "#94a3b8");
+
+    g.append("g")
+        .call(d3.axisLeft(y).ticks(5))
+        .attr("color", "#94a3b8");
+}
+
+function renderizarBarrasHorizontais({
+    seletor,
+    dados,
+    tituloTooltip,
+    formato,
+    destacarLabel = null,
+    dominioMaximo = null,
+    aoClicar = null,
+    mensagemVazia = "Sem dados disponíveis."
+}) {
+    const svg = d3.select(seletor);
+    svg.selectAll("*").remove();
+
+    const width = svg.node().getBoundingClientRect().width;
+    const height = svg.node().getBoundingClientRect().height;
+
+    const dadosLimitados = dados.slice(0, 10);
+
+    if (dadosLimitados.length === 0) {
+        svg.append("text")
+            .attr("x", width / 2)
+            .attr("y", height / 2)
+            .attr("text-anchor", "middle")
+            .attr("fill", "#94a3b8")
+            .style("font-size", "13px")
+            .style("font-weight", "bold")
+            .text(mensagemVazia);
+
+        return;
+    }
+
+    const margin = { top: 20, right: 105, bottom: 30, left: 175 };
+    const innerWidth = width - margin.left - margin.right;
+    const innerHeight = height - margin.top - margin.bottom;
+
+    const g = svg.append("g")
+        .attr("transform", `translate(${margin.left},${margin.top})`);
+
+    const xMax = dominioMaximo ?? (d3.max(dadosLimitados, d => d.valor) || 1);
+
+    const x = d3.scaleLinear()
+        .domain([0, xMax * 1.08])
+        .range([0, innerWidth]);
+
+    const y = d3.scaleBand()
+        .domain(dadosLimitados.map(d => d.label))
+        .range([0, innerHeight])
+        .padding(0.25);
+
+    g.selectAll("rect")
+        .data(dadosLimitados)
+        .enter()
+        .append("rect")
+        .attr("x", 0)
+        .attr("y", d => y(d.label))
+        .attr("width", d => x(d.valor))
+        .attr("height", y.bandwidth())
+        .attr("rx", 4)
+        .attr("fill", d => String(d.label) === String(destacarLabel) ? "#ef4444" : "#38bdf8")
+        .style("cursor", aoClicar ? "pointer" : "default")
+        .on("mouseover", function(event, d) {
+            d3.select(this).attr("opacity", 0.85);
+
+            tooltip
+                .style("opacity", 1)
+                .html(
+                    `<strong>${d.label}</strong><br>` +
+                    `${tituloTooltip}: <strong>${formato(d.valor)}</strong><br>` +
+                    `Casos: ${d.casos.toLocaleString()}<br>` +
+                    `Óbitos: ${d.obitos.toLocaleString()}`
+                );
+        })
+        .on("mousemove", function(event) {
+            tooltip
+                .style("left", `${event.pageX + 10}px`)
+                .style("top", `${event.pageY - 20}px`);
+        })
+        .on("mouseleave", function() {
+            d3.select(this).attr("opacity", 1);
+            tooltip.style("opacity", 0);
+        })
+        .on("click", function(event, d) {
+            if (aoClicar) aoClicar(d);
+        });
+
+    g.selectAll(".valor-barra")
+        .data(dadosLimitados)
+        .enter()
+        .append("text")
+        .attr("class", "valor-barra")
+        .attr("x", d => Math.min(x(d.valor) + 6, innerWidth + 4))
+        .attr("y", d => y(d.label) + y.bandwidth() / 2 + 4)
+        .attr("fill", "#f8fafc")
         .style("font-size", "11px")
-        .style("color", "#747d8c");
+        .style("font-weight", "bold")
+        .text(d => formato(d.valor));
 
-    // Injeção explícita de rótulos textuais explicativos ancorando os extremos do Why social do projeto
-    labels.append("div").html("<span style='display:inline-block; width:22px; font-weight:bold; color:#a50026;'>0.0</span> (Crítico / Retorno Vazio)");
-    labels.append("div").html("<span style='display:inline-block; width:22px; font-weight:bold; color:#b5b57a;'>1.0</span> (Fluxo Neutro)");
-    labels.append("div").html("<span style='display:inline-block; width:22px; font-weight:bold; color:#006837;'>2.0</span> (Superávit de Saídas)");
+    g.append("g")
+        .call(d3.axisLeft(y))
+        .attr("color", "#94a3b8")
+        .selectAll("text")
+        .style("font-size", "10px");
+
+    g.append("g")
+        .attr("transform", `translate(0,${innerHeight})`)
+        .call(d3.axisBottom(x).ticks(5))
+        .attr("color", "#94a3b8");
 }
