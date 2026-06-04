@@ -8,6 +8,7 @@ let dadosGeoGlobais = null;
 let paisSelecionadoAtual = "";
 let anoSelecionadoAtual = "";
 let modoRankingPrincipal = "pais";
+let modoAnalitico = "letalidade";
 let playAtivo = false;
 let intervaloPlay = null;
 
@@ -32,7 +33,6 @@ function normalizarPais(nome) {
     if (pais === "Guinea") return "Guinea";
     if (pais === "Guinea-Bissau") return "Guinea-Bissau";
     if (pais === "Equatorial Guinea") return "Equatorial Guinea";
-
     if (pais === "Sierra Leone") return "Sierra Leone";
     if (pais === "Liberia") return "Liberia";
     if (pais === "Uganda") return "Uganda";
@@ -199,19 +199,15 @@ function atualizarDashboard() {
 
     renderizarMapaAfrica(dadosGeoGlobais);
     renderizarRankingPrincipal();
-    renderizarLetalidadeHistoricaDoPais();
+    renderizarPainelAnalitico();
     renderizarParticipacaoHistoricaDoPais();
-    renderizarHeatmapAnoPais();
-    renderizarLinhaTempoGlobal();
 }
 
 function limparGraficos() {
     d3.select("#mapa-africa").selectAll("*").remove();
     d3.select("#ranking-casos").selectAll("*").remove();
-    d3.select("#ranking-letalidade").selectAll("*").remove();
+    d3.select("#painel-analitico").selectAll("*").remove();
     d3.select("#participacao-casos").selectAll("*").remove();
-    d3.select("#heatmap-ano-pais").selectAll("*").remove();
-    d3.select("#linha-tempo-global").selectAll("*").remove();
 }
 
 Promise.all([
@@ -259,6 +255,11 @@ Promise.all([
     d3.selectAll('input[name="rankingMode"]').on("change", function() {
         modoRankingPrincipal = this.value;
         renderizarRankingPrincipal();
+    });
+
+    d3.selectAll('input[name="analiticoMode"]').on("change", function() {
+        modoAnalitico = this.value;
+        renderizarPainelAnalitico();
     });
 
     d3.select("#btn-play-anos").on("click", alternarPlayAnos);
@@ -524,14 +525,29 @@ function renderizarRankingPrincipal() {
     });
 }
 
-function renderizarLetalidadeHistoricaDoPais() {
-    d3.select("#titulo-painel-letalidade").text(`3. Letalidade Anual — ${nomeCurtoPais(paisSelecionadoAtual)}`);
+function renderizarPainelAnalitico() {
+    if (modoAnalitico === "letalidade") {
+        d3.select("#titulo-painel-analitico").text(`3. Letalidade Anual — ${nomeCurtoPais(paisSelecionadoAtual)}`);
+        renderizarLetalidadeHistoricaDoPais("#painel-analitico");
+        return;
+    }
 
+    if (modoAnalitico === "heatmap") {
+        d3.select("#titulo-painel-analitico").text("3. Heatmap Ano × País");
+        renderizarHeatmapAnoPais("#painel-analitico");
+        return;
+    }
+
+    d3.select("#titulo-painel-analitico").text("3. Linha do Tempo Global");
+    renderizarLinhaTempoGlobal("#painel-analitico");
+}
+
+function renderizarLetalidadeHistoricaDoPais(seletor = "#painel-analitico") {
     const historico = obterHistoricoPais(paisSelecionadoAtual)
         .sort((a, b) => b.letalidade - a.letalidade);
 
     renderizarBarrasHorizontais({
-        seletor: "#ranking-letalidade",
+        seletor,
         dados: historico.map(d => ({
             label: String(d.ano),
             valor: d.letalidade,
@@ -576,13 +592,13 @@ function renderizarParticipacaoHistoricaDoPais() {
     });
 }
 
-function renderizarHeatmapAnoPais() {
-    const svg = d3.select("#heatmap-ano-pais");
+function renderizarHeatmapAnoPais(seletor) {
+    const svg = d3.select(seletor);
     svg.selectAll("*").remove();
 
     const width = svg.node().getBoundingClientRect().width;
     const height = svg.node().getBoundingClientRect().height;
-    const margin = { top: 30, right: 30, bottom: 50, left: 180 };
+    const margin = { top: 25, right: 25, bottom: 45, left: 160 };
 
     const innerWidth = width - margin.left - margin.right;
     const innerHeight = height - margin.top - margin.bottom;
@@ -684,11 +700,11 @@ function renderizarHeatmapAnoPais() {
         .call(d3.axisLeft(y))
         .attr("color", "#94a3b8")
         .selectAll("text")
-        .style("font-size", "10px");
+        .style("font-size", "9px");
 }
 
-function renderizarLinhaTempoGlobal() {
-    const svg = d3.select("#linha-tempo-global");
+function renderizarLinhaTempoGlobal(seletor) {
+    const svg = d3.select(seletor);
     svg.selectAll("*").remove();
 
     const dados = obterTotaisPorAno()
@@ -696,7 +712,7 @@ function renderizarLinhaTempoGlobal() {
 
     const width = svg.node().getBoundingClientRect().width;
     const height = svg.node().getBoundingClientRect().height;
-    const margin = { top: 25, right: 40, bottom: 45, left: 80 };
+    const margin = { top: 25, right: 40, bottom: 45, left: 75 };
 
     const innerWidth = width - margin.left - margin.right;
     const innerHeight = height - margin.top - margin.bottom;

@@ -8,7 +8,6 @@ export class DAO {
 
     async inicializar() {
         if (this.conn) return;
-
         this.db = await loadDb();
         this.conn = await this.db.connect();
     }

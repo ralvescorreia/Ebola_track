@@ -26,81 +26,6 @@ h1 {
     min-width: 0;
 }
 
-.side-panel {
-    position: sticky;
-    top: 20px;
-    background-color: #1e293b;
-    border: 1px solid #334155;
-    border-radius: 12px;
-    padding: 16px;
-    box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.3);
-}
-
-.side-panel h2 {
-    font-size: 15px;
-    margin: 0 0 16px 0;
-    text-transform: uppercase;
-}
-
-.side-section {
-    margin-bottom: 16px;
-}
-
-.side-section label {
-    display: block;
-    font-size: 12px;
-    color: #94a3b8;
-    font-weight: bold;
-    margin-bottom: 8px;
-}
-
-.side-panel hr {
-    border: 0;
-    border-top: 1px solid #334155;
-    margin: 14px 0;
-}
-
-#pais-ativo-card {
-    background: #0f172a;
-    border: 1px solid #334155;
-    border-radius: 8px;
-    padding: 10px;
-    color: #f8fafc;
-    font-size: 14px;
-    font-weight: 800;
-    overflow: hidden;
-    text-overflow: ellipsis;
-    white-space: nowrap;
-}
-
-.resumo-grid {
-    display: grid;
-    grid-template-columns: 1fr 1fr;
-    gap: 8px;
-}
-
-.resumo-grid div {
-    background: #0f172a;
-    border: 1px solid #334155;
-    border-radius: 8px;
-    padding: 9px;
-}
-
-.resumo-grid span {
-    display: block;
-    color: #94a3b8;
-    font-size: 10px;
-    font-weight: bold;
-    text-transform: uppercase;
-    margin-bottom: 4px;
-}
-
-.resumo-grid strong {
-    display: block;
-    color: #f8fafc;
-    font-size: 15px;
-}
-
 .kpi-grid {
     display: grid;
     grid-template-columns: repeat(5, 1fr);
@@ -131,6 +56,80 @@ h1 {
     color: #f8fafc;
 }
 
+.dashboard-grid {
+    display: grid;
+    grid-template-columns: 1fr 1.3fr;
+    grid-auto-rows: 390px;
+    gap: 16px;
+}
+
+.card {
+    background-color: #1e293b;
+    border-radius: 12px;
+    border: 1px solid #334155;
+    padding: 15px;
+    display: flex;
+    flex-direction: column;
+    box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.3);
+}
+
+.card h2 {
+    font-size: 14px;
+    font-weight: 600;
+    margin-top: 0;
+    margin-bottom: 10px;
+    color: #f8fafc;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+}
+
+svg {
+    width: 100%;
+    height: 100%;
+}
+
+/* ===========================
+   PAINEL LATERAL
+   =========================== */
+
+.side-panel {
+    position: sticky;
+    top: 20px;
+    background-color: #1e293b;
+    border: 1px solid #334155;
+    border-radius: 12px;
+    padding: 16px;
+    box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.3);
+}
+
+.side-panel h2 {
+    font-size: 15px;
+    margin: 0 0 16px 0;
+    text-transform: uppercase;
+}
+
+.side-section {
+    margin-bottom: 12px;
+}
+
+.side-section label {
+    display: block;
+    font-size: 12px;
+    color: #94a3b8;
+    font-weight: bold;
+    margin-bottom: 7px;
+}
+
+.side-panel hr {
+    border: 0;
+    border-top: 1px solid #334155;
+    margin: 10px 0;
+}
+
+/* ===========================
+   ANO
+   =========================== */
+
 #seletor-ano-painel {
     background: #334155;
     color: #f8fafc;
@@ -142,14 +141,100 @@ h1 {
     cursor: pointer;
 }
 
-#ranking-mode-selector {
-    display: flex;
-    flex-direction: column;
-    gap: 9px;
+/* ===========================
+   PAÍS ATIVO
+   =========================== */
+
+.pais-ativo-bloco {
+    display: grid;
+    grid-template-columns: 78px 1fr;
+    align-items: center;
+    gap: 8px;
+    margin-bottom: 8px;
+}
+
+.pais-ativo-bloco label {
+    margin-bottom: 0;
+}
+
+#pais-ativo-card {
     background: #0f172a;
     border: 1px solid #334155;
     border-radius: 8px;
-    padding: 10px;
+    padding: 7px 10px;
+    color: #f8fafc;
+    font-size: 13px;
+    font-weight: 800;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+/* ===========================
+   RESUMO DO PAÍS ATIVO
+   compacto, sem cards grandes
+   =========================== */
+
+.resumo-pais {
+    margin-bottom: 8px;
+}
+
+.resumo-pais label {
+    display: block;
+    font-size: 11px;
+    color: #94a3b8;
+    font-weight: bold;
+    margin-bottom: 6px;
+}
+
+.resumo-lista {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+}
+
+.resumo-linha {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    background: transparent;
+    border: 0;
+    border-bottom: 1px solid #334155;
+    border-radius: 0;
+    padding: 4px 2px;
+    min-height: 18px;
+}
+
+.resumo-linha:last-child {
+    border-bottom: 0;
+}
+
+.resumo-linha span {
+    color: #94a3b8;
+    font-size: 10px;
+    font-weight: 700;
+    text-transform: uppercase;
+}
+
+.resumo-linha strong {
+    color: #f8fafc;
+    font-size: 12px;
+    font-weight: 800;
+}
+
+/* ===========================
+   CONTROLES
+   =========================== */
+
+#ranking-mode-selector,
+#analitico-mode-selector {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    background: #0f172a;
+    border: 1px solid #334155;
+    border-radius: 8px;
+    padding: 9px;
 }
 
 .radio-option {
@@ -172,7 +257,7 @@ h1 {
     background: #334155;
     color: #f8fafc;
     border: 1px solid #475569;
-    padding: 10px;
+    padding: 9px;
     border-radius: 6px;
     width: 100%;
     font-weight: bold;
@@ -183,6 +268,10 @@ h1 {
     background: #475569;
 }
 
+/* ===========================
+   LEGENDA
+   =========================== */
+
 .legenda {
     font-size: 12px;
     color: #cbd5e1;
@@ -192,7 +281,7 @@ h1 {
     display: flex;
     align-items: center;
     gap: 8px;
-    margin-bottom: 8px;
+    margin-bottom: 7px;
 }
 
 .legend-color {
@@ -214,41 +303,14 @@ h1 {
     background: #ef4444;
 }
 
-.dashboard-grid {
-    display: grid;
-    grid-template-columns: 1fr 1.3fr;
-    grid-auto-rows: 390px;
-    gap: 16px;
+.selecionado {
+    background: #ef4444;
+    border: 1px solid #f8fafc;
 }
 
-.card {
-    background-color: #1e293b;
-    border-radius: 12px;
-    border: 1px solid #334155;
-    padding: 15px;
-    display: flex;
-    flex-direction: column;
-    box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.3);
-}
-
-.card-wide {
-    grid-column: span 2;
-}
-
-.card h2 {
-    font-size: 14px;
-    font-weight: 600;
-    margin-top: 0;
-    margin-bottom: 10px;
-    color: #f8fafc;
-    text-transform: uppercase;
-    letter-spacing: 0.5px;
-}
-
-svg {
-    width: 100%;
-    height: 100%;
-}
+/* ===========================
+   TOOLTIP
+   =========================== */
 
 .tooltip {
     position: absolute;
@@ -262,6 +324,10 @@ svg {
     z-index: 10;
     border: 1px solid #475569;
 }
+
+/* ===========================
+   RESPONSIVO
+   =========================== */
 
 @media (max-width: 1100px) {
     .page-layout {
@@ -277,9 +343,5 @@ svg {
     .kpi-grid,
     .dashboard-grid {
         grid-template-columns: 1fr;
-    }
-
-    .card-wide {
-        grid-column: span 1;
     }
 }

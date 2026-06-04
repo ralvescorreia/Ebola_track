@@ -59,23 +59,13 @@
                 </div>
 
                 <div class="card">
-                    <h2 id="titulo-painel-letalidade">3. Letalidade Anual do País Selecionado</h2>
-                    <svg id="ranking-letalidade"></svg>
+                    <h2 id="titulo-painel-analitico">3. Letalidade Anual</h2>
+                    <svg id="painel-analitico"></svg>
                 </div>
 
                 <div class="card">
-                    <h2 id="titulo-painel-participacao">4. Participação do País no Total Global (%)</h2>
+                    <h2 id="titulo-painel-participacao">4. Participação Global</h2>
                     <svg id="participacao-casos"></svg>
-                </div>
-
-                <div class="card card-wide">
-                    <h2>5. Heatmap Ano × País</h2>
-                    <svg id="heatmap-ano-pais"></svg>
-                </div>
-
-                <div class="card card-wide">
-                    <h2>6. Linha do Tempo Global</h2>
-                    <svg id="linha-tempo-global"></svg>
                 </div>
 
             </div>
@@ -93,7 +83,7 @@
 
             <hr>
 
-            <div class="side-section">
+            <div class="side-section pais-ativo-bloco">
                 <label>📌 País ativo</label>
                 <div id="pais-ativo-card">-</div>
             </div>
@@ -101,23 +91,23 @@
             <div class="side-section resumo-pais">
                 <label>Resumo do país ativo</label>
 
-                <div class="resumo-grid">
-                    <div>
+                <div class="resumo-lista">
+                    <div class="resumo-linha">
                         <span>Ano</span>
                         <strong id="resumo-ano">-</strong>
                     </div>
 
-                    <div>
+                    <div class="resumo-linha">
                         <span>Casos</span>
                         <strong id="resumo-casos">-</strong>
                     </div>
 
-                    <div>
+                    <div class="resumo-linha">
                         <span>Óbitos</span>
                         <strong id="resumo-obitos">-</strong>
                     </div>
 
-                    <div>
+                    <div class="resumo-linha">
                         <span>Letalidade</span>
                         <strong id="resumo-letalidade">-</strong>
                     </div>
@@ -160,6 +150,29 @@
             <hr>
 
             <div class="side-section">
+                <label>🧭 Painel Analítico</label>
+
+                <div id="analitico-mode-selector">
+                    <label class="radio-option">
+                        <input type="radio" name="analiticoMode" value="letalidade" checked>
+                        <span>Letalidade</span>
+                    </label>
+
+                    <label class="radio-option">
+                        <input type="radio" name="analiticoMode" value="heatmap">
+                        <span>Heatmap Ano × País</span>
+                    </label>
+
+                    <label class="radio-option">
+                        <input type="radio" name="analiticoMode" value="linha">
+                        <span>Linha do Tempo Global</span>
+                    </label>
+                </div>
+            </div>
+
+            <hr>
+
+            <div class="side-section">
                 <label>▶ Animação temporal</label>
                 <button id="btn-play-anos" class="btn-controle">Play anos</button>
             </div>
@@ -176,12 +189,17 @@
 
                 <div class="legend-row">
                     <span class="legend-color poucos-casos"></span>
-                    <span>Menor casos</span>
+                    <span>Menor carga</span>
                 </div>
 
                 <div class="legend-row">
                     <span class="legend-color muitos-casos"></span>
-                    <span>Maior casos</span>
+                    <span>Maior carga</span>
+                </div>
+
+                <div class="legend-row">
+                    <span class="legend-color selecionado"></span>
+                    <span>País selecionado</span>
                 </div>
             </div>
 
